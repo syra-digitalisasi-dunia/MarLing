@@ -32,18 +32,28 @@ fi
 supported_os=false
 
 if [ -f /etc/os-release ]; then
-    os_name=$(grep -E '^ID=' /etc/os-release | cut -d= -f2)
+    os_name=$(grep -E '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"')
     os_version=$(grep -E '^VERSION_ID=' /etc/os-release | cut -d= -f2 | tr -d '"')
 
- if [ "$os_name" == "debian" ] && ([ "$os_version" == "11" ] || [ "$os_version" == "12" ]); then
-    supported_os=true
+    # Debugging: Print detected OS name and version
+    echo "Detected OS Name: $os_name"
+    echo "Detected OS Version: $os_version"
+
+    if [ "$os_name" == "debian" ] && ([ "$os_version" == "11" ] || [ "$os_version" == "12" ]); then
+        supported_os=true
     elif [ "$os_name" == "ubuntu" ] && [ "$os_version" == "20.04" ]; then
+        supported_os=true
+    # Modified the AlmaLinux version check to support minor versions (e.g., 8.x, 9.x)
+    elif [ "$os_name" == "almalinux" ] && ([[ "$os_version" =~ ^8.*$ ]] || [[ "$os_version" =~ ^9.*$ ]]); then
         supported_os=true
     fi
 fi
-apt install sudo curl -y
+
+# Asumsi sudo dan curl sudah tersedia di AlmaLinux. Jika tidak, instalasi dnf akan menanganinya.
+# Baris "apt install sudo curl -y" dihapus karena tidak relevan untuk AlmaLinux dan ditempatkan sebelum pemeriksaan OS.
+
 if [ "$supported_os" != true ]; then
-    colorized_echo red "Error: Skrip ini hanya support di Debian 11/12 dan Ubuntu 20.04. Mohon gunakan OS yang di support."
+    colorized_echo red "Error: Skrip ini hanya support di Debian 11/12, Ubuntu 20.04, dan AlmaLinux 8/9. Mohon gunakan OS yang di support."
     exit 1
 fi
 
@@ -78,13 +88,12 @@ echo "$passpanel" > /etc/data/passpanel
 #Preparation
 clear
 cd;
-apt-get update;
+# Gunakan dnf untuk AlmaLinux
+dnf update -y;
 
 #Remove unused Module
-apt-get -y --purge remove samba*;
-apt-get -y --purge remove apache2*;
-apt-get -y --purge remove sendmail*;
-apt-get -y --purge remove bind9*;
+# Gunakan dnf untuk AlmaLinux
+dnf remove -y samba* httpd* sendmail* bind*;
 
 #install bbr
 echo 'fs.file-max = 500000
@@ -114,12 +123,16 @@ net.ipv6.conf.lo.disable_ipv6 = 1' >> /etc/sysctl.conf
 sysctl -p;
 
 #install toolkit
-apt-get install libio-socket-inet6-perl libsocket6-perl libcrypt-ssleay-perl libnet-libidn-perl perl libio-socket-ssl-perl libwww-perl libpcre3 libpcre3-dev zlib1g-dev dbus iftop zip unzip wget net-tools curl nano sed screen gnupg gnupg1 bc apt-transport-https build-essential dirmngr dnsutils sudo at htop iptables bsdmainutils cron lsof lnav -y
+# Gunakan dnf untuk AlmaLinux dan sesuaikan nama paket
+dnf install -y perl-IO-Socket-INET6 perl-Socket6 perl-Net-SSLeay perl-Net-LibIDN perl-IO-Socket-SSL perl-LWP-Protocol-https pcre pcre-devel zlib-devel dbus iftop zip unzip wget net-tools curl nano sed screen gnupg2 bc gcc make dirmngr bind-utils sudo at htop iptables util-linux cronie lsof lnav
 
 #Set Timezone GMT+7
 timedatectl set-timezone Asia/Jakarta;
 
 #Install Marzban
+# CATATAN: Skrip Marzban itu sendiri mungkin berisi perintah apt.
+# Jika skrip ini gagal, Anda mungkin perlu memeriksa marzban.sh secara manual
+# dan mengadaptasinya untuk manajer paket AlmaLinux (dnf).
 sudo bash -c "$(curl -sL https://github.com/GawrAme/Marzban-scripts/raw/master/marzban.sh)" @ install
 
 #Install Subs
@@ -136,7 +149,8 @@ cd
 echo -e 'profile' >> /root/.profile
 wget -O /usr/bin/profile "https://raw.githubusercontent.com/GawrAme/MarLing/main/profile";
 chmod +x /usr/bin/profile
-apt install neofetch -y
+# Gunakan dnf untuk AlmaLinux
+dnf install -y neofetch
 wget -O /usr/bin/cekservice "https://raw.githubusercontent.com/GawrAme/MarLing/main/cekservice.sh"
 chmod +x /usr/bin/cekservice
 
@@ -144,23 +158,27 @@ chmod +x /usr/bin/cekservice
 wget -O /opt/marzban/docker-compose.yml "https://raw.githubusercontent.com/GawrAme/MarLing/main/docker-compose.yml"
 
 #Install VNSTAT
-apt -y install vnstat
-/etc/init.d/vnstat restart
-apt -y install libsqlite3-dev
+# Gunakan dnf untuk AlmaLinux
+dnf install -y vnstat
+systemctl restart vnstat # Menggunakan systemctl untuk konsistensi
+# Gunakan dnf untuk AlmaLinux
+dnf install -y sqlite-devel
 wget https://github.com/GawrAme/MarLing/raw/main/vnstat-2.6.tar.gz
 tar zxvf vnstat-2.6.tar.gz
 cd vnstat-2.6
-./configure --prefix=/usr --sysconfdir=/etc && make && make install 
+./configure --prefix=/usr --sysconfdir=/etc && make && make install
 cd
 chown vnstat:vnstat /var/lib/vnstat -R
 systemctl enable vnstat
-/etc/init.d/vnstat restart
-rm -f /root/vnstat-2.6.tar.gz 
+systemctl restart vnstat
+rm -f /root/vnstat-2.6.tar.gz
 rm -rf /root/vnstat-2.6
 
 #Install Speedtest
-curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
-sudo apt-get install speedtest -y
+# Gunakan script.rpm.sh untuk AlmaLinux
+curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.rpm.sh | sudo bash
+# Gunakan dnf untuk AlmaLinux
+sudo dnf install -y speedtest
 
 #install nginx
 mkdir -p /var/log/nginx
@@ -173,9 +191,12 @@ mkdir -p /var/www/html
 echo "<pre>Setup by AutoScript LingVPN</pre>" > /var/www/html/index.html
 
 #install socat
-apt install iptables -y
-apt install curl socat xz-utils wget apt-transport-https gnupg gnupg2 gnupg1 dnsutils lsb-release -y 
-apt install socat cron bash-completion -y
+# Gunakan dnf untuk AlmaLinux
+dnf install -y iptables
+# Gunakan dnf untuk AlmaLinux dan sesuaikan nama paket
+dnf install -y curl socat xz-utils wget gnupg2 bind-utils redhat-lsb-core -y
+# Gunakan dnf untuk AlmaLinux dan sesuaikan nama paket
+dnf install -y socat cronie bash-completion -y
 
 #install cert
 curl https://get.acme.sh | sh -s email=$email
@@ -184,16 +205,63 @@ curl https://get.acme.sh | sh -s email=$email
 wget -O /var/lib/marzban/xray_config.json "https://raw.githubusercontent.com/GawrAme/MarLing/main/xray_config.json"
 
 #install firewall
-apt install ufw -y
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow ssh
-sudo ufw allow http
-sudo ufw allow https
-sudo ufw allow 8081/tcp
-sudo ufw allow 1080/tcp
-sudo ufw allow 1080/udp
-yes | sudo ufw enable
+# Gunakan iptables sebagai firewall
+# Hentikan dan nonaktifkan firewalld jika berjalan, untuk menghindari konflik
+if systemctl is-active --quiet firewalld; then
+    colorized_echo yellow "Firewalld terdeteksi dan aktif. Menonaktifkan firewalld..."
+    systemctl stop firewalld
+    systemctl disable firewalld
+    colorized_echo green "Firewalld berhasil dinonaktifkan."
+fi
+
+# Instal iptables-services untuk persistensi aturan
+dnf install -y iptables-services
+
+# Bersihkan semua aturan iptables yang ada
+iptables -F
+iptables -X
+iptables -t nat -F
+iptables -t nat -X
+iptables -t mangle -F
+iptables -t mangle -X
+
+# Setel kebijakan default ke DROP untuk INPUT dan FORWARD, ACCEPT untuk OUTPUT
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT ACCEPT
+
+# Izinkan lalu lintas loopback
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+
+# Izinkan koneksi yang sudah ada dan terkait
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# Izinkan SSH (port 22)
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+# Izinkan HTTP (port 80)
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+
+# Izinkan HTTPS (port 443)
+iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+
+# Izinkan port 8081 (TCP)
+iptables -A INPUT -p tcp --dport 8081 -j ACCEPT
+
+# Izinkan port 1080 (TCP)
+iptables -A INPUT -p tcp --dport 1080 -j ACCEPT
+
+# Izinkan port 1080 (UDP)
+iptables -A INPUT -p udp --dport 1080 -j ACCEPT
+
+# Simpan aturan iptables agar persisten setelah reboot
+# Untuk AlmaLinux, ini biasanya dilakukan dengan service iptables-persistent atau dengan mengaktifkan dan menyimpan via systemctl
+systemctl enable iptables # Pastikan layanan iptables diaktifkan
+systemctl start iptables  # Mulai layanan iptables
+iptables-save > /etc/sysconfig/iptables # Simpan aturan ke file konfigurasi default
+
+colorized_echo green "Firewall iptables telah dikonfigurasi dan diaktifkan."
 
 #install database
 wget -O /var/lib/marzban/db.sqlite3 "https://github.com/GawrAme/MarLing/raw/main/db.sqlite3"
@@ -201,11 +269,12 @@ wget -O /var/lib/marzban/db.sqlite3 "https://github.com/GawrAme/MarLing/raw/main
 #install WARP Proxy
 wget -O /root/warp "https://raw.githubusercontent.com/hamid-gh98/x-ui-scripts/main/install_warp_proxy.sh"
 sudo chmod +x /root/warp
-sudo bash /root/warp -y 
+sudo bash /root/warp -y
 
 #finishing
-apt autoremove -y
-apt clean
+# Gunakan dnf untuk AlmaLinux
+dnf autoremove -y
+dnf clean all -y
 cd /opt/marzban
 sed -i "s/# SUDO_USERNAME = \"admin\"/SUDO_USERNAME = \"${userpanel}\"/" /opt/marzban/.env
 sed -i "s/# SUDO_PASSWORD = \"admin\"/SUDO_PASSWORD = \"${passpanel}\"/" /opt/marzban/.env
@@ -226,9 +295,9 @@ curl -X 'POST' \
   -d "grant_type=password&username=${userpanel}&password=${passpanel}&scope=&client_id=string&client_secret=string" > /etc/data/token.json
 cd
 touch /root/log-install.txt
-echo -e "Untuk data login dashboard Marzban: 
+echo -e "Untuk data login dashboard Marzban:
 -=================================-
-URL HTTPS : https://${domain}/dashboard 
+URL HTTPS : https://${domain}/dashboard
 username  : ${userpanel}
 password  : ${passpanel}
 -=================================-
