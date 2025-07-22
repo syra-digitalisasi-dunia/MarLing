@@ -136,10 +136,10 @@ timedatectl set-timezone Asia/Jakarta;
 sudo bash -c "$(curl -sL https://github.com/GawrAme/Marzban-scripts/raw/master/marzban.sh)" @ install
 
 #Install Subs
-wget -N -P /var/lib/marzban/templates/subscription/  https://raw.githubusercontent.com/GawrAme/MarLing/main/index.html
+wget -N -P /var/lib/marzban/templates/subscription/  https://raw.githubusercontent.com/syra-digitalisasi-dunia/MarLing/refs/heads/main/index.html
 
 #install env
-wget -O /opt/marzban/.env "https://raw.githubusercontent.com/GawrAme/MarLing/main/env"
+wget -O /opt/marzban/.env "https://raw.githubusercontent.com/syra-digitalisasi-dunia/MarLing/refs/heads/main/env"
 
 #install Assets folder
 mkdir -p /var/lib/marzban/assets
@@ -147,15 +147,15 @@ cd
 
 #profile
 echo -e 'profile' >> /root/.profile
-wget -O /usr/bin/profile "https://raw.githubusercontent.com/GawrAme/MarLing/main/profile";
+wget -O /usr/bin/profile "https://raw.githubusercontent.com/syra-digitalisasi-dunia/MarLing/refs/heads/main/profile";
 chmod +x /usr/bin/profile
 # Gunakan dnf untuk AlmaLinux
 dnf install -y neofetch
-wget -O /usr/bin/cekservice "https://raw.githubusercontent.com/GawrAme/MarLing/main/cekservice.sh"
+wget -O /usr/bin/cekservice "https://raw.githubusercontent.com/syra-digitalisasi-dunia/MarLing/refs/heads/main/cekservice.sh"
 chmod +x /usr/bin/cekservice
 
 #install compose
-wget -O /opt/marzban/docker-compose.yml "https://raw.githubusercontent.com/GawrAme/MarLing/main/docker-compose.yml"
+wget -O /opt/marzban/docker-compose.yml "https://raw.githubusercontent.com/syra-digitalisasi-dunia/MarLing/refs/heads/main/docker-compose.yml"
 
 #Install VNSTAT
 # Gunakan dnf untuk AlmaLinux
@@ -184,9 +184,9 @@ sudo dnf install -y speedtest
 mkdir -p /var/log/nginx
 touch /var/log/nginx/access.log
 touch /var/log/nginx/error.log
-wget -O /opt/marzban/nginx.conf "https://raw.githubusercontent.com/GawrAme/MarLing/main/nginx.conf"
-wget -O /opt/marzban/default.conf "https://raw.githubusercontent.com/GawrAme/MarLing/main/vps.conf"
-wget -O /opt/marzban/xray.conf "https://raw.githubusercontent.com/GawrAme/MarLing/main/xray.conf"
+wget -O /opt/marzban/nginx.conf "https://raw.githubusercontent.com/syra-digitalisasi-dunia/MarLing/refs/heads/main/nginx.conf"
+wget -O /opt/marzban/default.conf "https://raw.githubusercontent.com/syra-digitalisasi-dunia/MarLing/refs/heads/main/vps.conf"
+wget -O /opt/marzban/xray.conf "https://raw.githubusercontent.com/syra-digitalisasi-dunia/MarLing/refs/heads/main/xray.conf"
 mkdir -p /var/www/html
 echo "<pre>Setup by AutoScript LingVPN</pre>" > /var/www/html/index.html
 
@@ -202,7 +202,7 @@ dnf install -y socat cronie bash-completion -y
 curl https://get.acme.sh | sh -s email=$email
 /root/.acme.sh/acme.sh --server letsencrypt --register-account -m $email --issue -d $domain --standalone -k ec-256 --debug
 ~/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /var/lib/marzban/xray.crt --keypath /var/lib/marzban/xray.key --ecc
-wget -O /var/lib/marzban/xray_config.json "https://raw.githubusercontent.com/GawrAme/MarLing/main/xray_config.json"
+wget -O /var/lib/marzban/xray_config.json "https://raw.githubusercontent.com/syra-digitalisasi-dunia/MarLing/refs/heads/main/xray_config.json"
 
 #install firewall
 # Gunakan iptables sebagai firewall
